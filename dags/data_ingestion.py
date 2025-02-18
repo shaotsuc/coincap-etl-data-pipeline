@@ -2,6 +2,9 @@ import os, requests, pandas as pd
 from sqlalchemy import create_engine, text
 from datetime import datetime, timedelta
 
+from airflow import DAG
+from airflow.operators.python import PythonOperator
+
 
 ## Env variables
 POSTGRES_USER=os.environ['POSTGRES_USER']
@@ -11,16 +14,16 @@ DB_NAME=os.environ['DB_NAME']
 
 ## Variables
 DATA_URL = 'https://api.coincap.io/v2/assets?limit=100'
-DB_URL = f'postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@localhost:5432/{DB_NAME}'
+DB_URL = f'postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@postgres:5432/{DB_NAME}'
 TODAY = datetime.today().date()
 
 schema_name = 'coincap_raw'
 table_name = 'raw_asset'
-source_file_path = f'./src/{TODAY}_raw_data.parquet'
+source_file_path = f'./tmp/asset_data_{TODAY}.parquet'
 
 
 ## Get data from API source and format to parquet file
-def get_format_data(data_url):
+def get_format_data(data_url, source_file_path):
     """
     1. To get data from API source. 
     2. To format it to parquet file.
@@ -80,12 +83,24 @@ def create_table(schema: str, table: str):
 
 
 ## Load Parquet into raw schema
-def load_in_DB():
+def load_in_DB(source_file_path, schema, table):
     with db_connection as conn:
         df = pd.read_parquet(source_file_path)
-        df.to_sql(table_name, conn, schema=schema_name, if_exists='replace', index=False)
+        df.to_sql(table, conn, schema=schema, if_exists='replace', index=False)
 
-        print(f'Successfully loaded data in {schema_name}.{table_name}')
+        print(f'Successfully loaded data in {schema}.{table}')
+
+
+## remove data after loading successfully
+def remove_source_file():
+    """
+    To remove source files after the completion of data pipeline.
+    """
+    try:
+        os.remove(source_file_path)
+    except FileNotFoundError:
+        print('No file was deleted.')
+
 
 
 
@@ -93,6 +108,68 @@ def load_in_DB():
 default_args = {
     'owner': 'airflow',
     'start_date': datetime(2025, 2, 17),
-    'retries': 2,
-    'retry_delay': timedelta(minutes=5)
+    'retries': 3,
+    'retry_delay': timedelta(seconds=30)
 }
+
+
+## DAGs declaration
+with DAG(
+    dag_id='data_ingestion_dag',
+    schedule='*/5 * * * *',  # runs every 5 minutes 
+    default_args=default_args
+    ) as dag:
+
+
+## 1. get the data
+    get_dataset_task = PythonOperator(
+        task_id='get_dataset',
+        python_callable=get_format_data,
+        op_kwargs={
+            'data_url': DATA_URL,
+            'source_file_path': source_file_path
+        }
+    )
+
+
+## 2. create schema 
+    checking_schema_task = PythonOperator(
+        task_id='checking_schema',
+        python_callable=create_schema,
+        op_kwargs={
+            'schema': schema_name
+        }
+    )
+
+
+## 3. create table
+    checking_table_task = PythonOperator(
+        task_id='checking_schema',
+        python_callable=create_table,
+        op_kwargs={
+            'schema': schema_name,
+            'table': table_name
+        }
+    )
+
+
+## 3. load data
+    load_data_task = PythonOperator(
+        task_id='load_data',
+        python_callable=load_in_DB,
+        op_kwargs={
+            'source_file_path': source_file_path,
+            'schema': schema_name,
+            'table': table_name
+        }
+    )
+
+
+## 4. remove data
+    remove_file_task = PythonOperator(
+        task_id='remove_file',
+        python_callable=remove_source_file,
+    )
+
+
+get_dataset_task >> checking_schema_task >> checking_table_task >> load_data_task >> remove_file_task
