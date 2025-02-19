@@ -6,30 +6,25 @@ from airflow import DAG
 from airflow.operators.python import PythonOperator
 
 
-## Env variables
-POSTGRES_USER=os.environ['POSTGRES_USER']
-POSTGRES_PASSWORD=os.environ['POSTGRES_PASSWORD']
-DB_NAME=os.environ['DB_NAME']
-
 
 ## Variables
 DATA_URL = 'https://api.coincap.io/v2/assets?limit=100'
-DB_URL = f'postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@postgres:5432/{DB_NAME}'
+DB_URL = f'postgresql://admin:admin@postgres:5432/coincap'  # not setting in env variable as it's local environment
 TODAY = datetime.today().date()
 
 schema_name = 'coincap_raw'
 table_name = 'raw_asset'
-source_file_path = f'./tmp/asset_data_{TODAY}.parquet'
+source_file_path = f'./data/asset_data_{TODAY}.parquet'
 
 
 ## Get data from API source and format to parquet file
-def get_format_data(data_url, source_file_path):
+def get_format_data():
     """
     1. To get data from API source. 
     2. To format it to parquet file.
     3. To save in destinated source file path as temporary file.
     """
-    result = requests.get(data_url).json()
+    result = requests.get(DATA_URL).json()
     data = result['data']
     df = pd.json_normalize(data)
     df.to_parquet(source_file_path, index=False) 
@@ -144,7 +139,7 @@ with DAG(
 
 ## 3. create table
     checking_table_task = PythonOperator(
-        task_id='checking_schema',
+        task_id='checking_table',
         python_callable=create_table,
         op_kwargs={
             'schema': schema_name,
@@ -173,3 +168,4 @@ with DAG(
 
 
 get_dataset_task >> checking_schema_task >> checking_table_task >> load_data_task >> remove_file_task
+
