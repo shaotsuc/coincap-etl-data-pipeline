@@ -306,15 +306,17 @@ services:
       airflow-init:
         condition: service_completed_successfully
 
-  # dbt:
-  #   build:
-  #   environment:
-  #     DBT_PROFILES_DIR: /opt/dbt
-  #     PGPASSWORD: admin
-  #   depends_on:
-  #     - postgres
-  #   volumes:
-  #     - .:/opt
+  dbt:
+    image: ghcr.io/dbt-labs/dbt-postgres:latest
+    platform: linux/amd64
+    environment:
+      DBT_PROFILES_DIR: /usr/app/dbt
+      PGPASSWORD: admin
+    depends_on:
+      - postgres
+    volumes:
+      - ./dbt:/usr/app/dbt
+
 
 volumes:
   postgres-db-volume:

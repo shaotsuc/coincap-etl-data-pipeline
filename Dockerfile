@@ -9,14 +9,10 @@ ENV AIRFLOW_HOME=/opt/airflow
 USER airflow
 
 WORKDIR $AIRFLOW_HOME
-USER $AIRFLOW_UID
 
+USER $AIRFLOW_UID
 
 # Copy the files into the container and package dependencies
 COPY . .
-RUN pip install -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 RUN chmod +x ./entrypoint.sh
-
-
-# Add dbt to PATH
-# ENV PATH="/root/.local/bin:${PATH}"
