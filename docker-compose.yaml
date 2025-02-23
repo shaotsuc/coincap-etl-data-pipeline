@@ -72,6 +72,12 @@ x-airflow-common:
     # The following line can be used to set a custom config file, stored in the local config folder
     # If you want to use it, outcomment it and replace airflow.cfg with the name of your config file
     # AIRFLOW_CONFIG: '/opt/airflow/config/airflow.cfg'
+
+    # DB enviroment VAR when container is setting up
+    POSTGRES_USER: ${POSTGRES_USER}
+    POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    DB_NAME: ${DB_NAME}
+
   volumes:
     - ${AIRFLOW_PROJ_DIR:-.}/dags:/opt/airflow/dags
     - ${AIRFLOW_PROJ_DIR:-.}/logs:/opt/airflow/logs
@@ -299,6 +305,16 @@ services:
       <<: *airflow-common-depends-on
       airflow-init:
         condition: service_completed_successfully
+
+  # dbt:
+  #   build:
+  #   environment:
+  #     DBT_PROFILES_DIR: /opt/dbt
+  #     PGPASSWORD: admin
+  #   depends_on:
+  #     - postgres
+  #   volumes:
+  #     - .:/opt
 
 volumes:
   postgres-db-volume:

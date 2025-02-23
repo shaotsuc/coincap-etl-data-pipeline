@@ -6,10 +6,14 @@ from airflow import DAG
 from airflow.operators.python import PythonOperator
 
 
+## ENV VAR
+POSTGRES_USER=os.environ['POSTGRES_USER']
+POSTGRES_PASSWORD=os.environ['POSTGRES_PASSWORD']
+DB_NAME=os.environ['DB_NAME']
 
 ## Variables
 DATA_URL = 'https://api.coincap.io/v2/assets?limit=100'
-DB_URL = f'postgresql://admin:admin@postgres:5432/coincap'  # not setting in env variable as it's local environment
+DB_URL = f'postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@postgres:5432/{DB_NAME}'  
 TODAY = datetime.today().date()
 
 schema_name = 'coincap_raw'
