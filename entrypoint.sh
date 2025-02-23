@@ -6,3 +6,8 @@ airflow users create -r Admin -u admin -p admin -e admin@example.com -f admin -l
 
 airflow webserver
 
+
+# export env VAR
+export POSTGRES_USER=${POSTGRES_USER}
+export POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+export DB_NAME=${DB_NAME}
