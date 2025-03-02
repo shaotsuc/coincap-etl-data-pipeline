@@ -1,8 +1,6 @@
 # Base image
 FROM apache/airflow:2.7.1
 
-FROM python:3.10-slim-bullseye
-
 ENV AIRFLOW_HOME=/opt/airflow
 
 # Switch to the airflow user
