@@ -1,0 +1,8 @@
+version: 2
+
+sources:
+  - name: coincap_raw
+    database: coincap
+    schema: coincap_raw
+    tables:
+      - name: raw_asset

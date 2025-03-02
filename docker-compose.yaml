@@ -310,12 +310,13 @@ services:
     image: ghcr.io/dbt-labs/dbt-postgres:latest
     platform: linux/amd64
     environment:
-      DBT_PROFILES_DIR: /usr/app/dbt
+      DBT_PROFILES_DIR: /dbt
       PGPASSWORD: admin
     depends_on:
       - postgres
     volumes:
-      - ./dbt:/usr/app/dbt
+      - ./dbt:/dbt
+    working_dir: /dbt
 
 
 volumes:
