@@ -7,6 +7,7 @@ x-airflow-common:
   # build: .
   environment:
     &airflow-common-env
+    AIRFLOW__CORE__DEFAULT_TIMEZONE: 'UTC'
     AIRFLOW__CORE__EXECUTOR: CeleryExecutor
     AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://admin:admin@postgres/coincap
     AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://admin:admin@postgres/coincap
@@ -48,34 +49,71 @@ x-airflow-common:
 
 services:
   postgres:
-    image: postgres:13
+    image: postgres
     environment:
       POSTGRES_USER: admin
       POSTGRES_PASSWORD: admin
       POSTGRES_DB: coincap
     volumes:
-      - postgres-db-volume:/var/lib/postgresql/data
+      - postgres-db:/var/lib/postgresql/data
     ports:
-      - "5432:5432"
+      - 5432:5432
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -d coincap -U admin"]
       interval: 10s
       retries: 5
       start_period: 5s
     restart: always
-    
+
+  metabase:
+    image: metabase/metabase:latest
+    volumes:
+      - metabase-data:/metabase-data
+    ports:
+      - 3000:3000
+    environment:
+      MB_DB_TYPE: postgres
+      MB_DB_DBNAME: coincap
+      MB_DB_PORT: 5432
+      MB_DB_USER: admin
+      MB_DB_PASS: admin
+      MB_DB_HOST: postgres
+    healthcheck:
+      test: curl --fail -I http://localhost:3000/api/health || exit 1
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+
+  dbt:
+    image: ghcr.io/dbt-labs/dbt-postgres:latest
+    platform: linux/amd64
+    environment:
+      DBT_PROFILES_DIR: /dbt
+      PGPASSWORD: admin
+    depends_on:
+      - postgres
+    volumes:
+      - ./dbt:/dbt
+    working_dir: /dbt
+
   pgadmin:
     image: dpage/pgadmin4
-    container_name: pgadmin4_container
     restart: always
     ports:
-      - "8888:80"
+      - 8888:80
     environment:
       PGADMIN_DEFAULT_EMAIL: admin@admin.com
       PGADMIN_DEFAULT_PASSWORD: admin
+    depends_on:
+      - postgres
     volumes:
       - pgadmin-data:/var/lib/pgadmin
 
+
+  ###########
+  # Airflow #
+  ###########
 
   redis:
     # Redis is limited to 7.2-bookworm due to licencing change
@@ -91,16 +129,17 @@ services:
       start_period: 30s
     restart: always
 
+
   airflow-webserver:
     <<: *airflow-common
     command: webserver
     ports:
-      - "8080:8080"
+      - 8080:8080
     healthcheck:
       test: ["CMD", "curl", "--fail", "http://localhost:8080/health"]
       interval: 30s
-      timeout: 10s
-      retries: 5
+      timeout: 5s
+      retries: 3
       start_period: 30s
     restart: always
     depends_on:
@@ -122,6 +161,7 @@ services:
       <<: *airflow-common-depends-on
       airflow-init:
         condition: service_completed_successfully
+
 
   airflow-worker:
     <<: *airflow-common
@@ -160,6 +200,7 @@ services:
       <<: *airflow-common-depends-on
       airflow-init:
         condition: service_completed_successfully
+
 
   airflow-init:
     <<: *airflow-common
@@ -241,13 +282,13 @@ services:
   # You can enable flower by adding "--profile flower" option e.g. docker-compose --profile flower up
   # or by explicitly targeted on the command line e.g. docker-compose up flower.
   # See: https://docs.docker.com/compose/profiles/
-  flower:
+  airflow-flower:
     <<: *airflow-common
     command: celery flower
     profiles:
       - flower
     ports:
-      - "5555:5555"
+      - 5555:5555
     healthcheck:
       test: ["CMD", "curl", "--fail", "http://localhost:5555/"]
       interval: 30s
@@ -260,41 +301,7 @@ services:
       airflow-init:
         condition: service_completed_successfully
 
-  dbt:
-    image: ghcr.io/dbt-labs/dbt-postgres:latest
-    platform: linux/amd64
-    environment:
-      DBT_PROFILES_DIR: /dbt
-      PGPASSWORD: admin
-    depends_on:
-      - postgres
-    volumes:
-      - ./dbt:/dbt
-    working_dir: /dbt
-
-  metabase:
-    image: metabase/metabase:latest
-    platform: linux/amd64
-    container_name: metabase
-    hostname: metabase
-    volumes:
-      - /dev/urandom:/dev/random:ro
-    ports:
-      - 3000:3000
-    environment:
-      MB_DB_TYPE: postgres
-      MB_DB_DBNAME: coincap
-      MB_DB_PORT: 5432
-      MB_DB_USER: admin
-      MB_DB_PASS: admin
-      MB_DB_HOST: postgres
-    healthcheck:
-      test: curl --fail -I http://localhost:3000/api/health || exit 1
-      interval: 15s
-      timeout: 5s
-      retries: 5
-
-      
 volumes:
-  postgres-db-volume:
+  postgres-db:
   pgadmin-data:
+  metabase-data:
