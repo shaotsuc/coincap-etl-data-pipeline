@@ -108,7 +108,7 @@ default_args = {
     'owner': 'airflow',
     'start_date': datetime(2025, 2, 17),
     'retries': 3,
-    'retry_delay': timedelta(seconds=30)
+    'retry_delay': timedelta(seconds=60)
 }
 
 
@@ -116,7 +116,9 @@ default_args = {
 with DAG(
     dag_id='data_ingestion_dag',
     schedule='*/5 * * * *',  # runs every 5 minutes 
-    default_args=default_args
+    default_args=default_args,
+    catchup=False,
+    tags=['etl','ingestion']
     ) as dag:
 
 
@@ -172,4 +174,3 @@ with DAG(
 
 
 get_dataset_task >> checking_schema_task >> checking_table_task >> load_data_task >> remove_file_task
-
