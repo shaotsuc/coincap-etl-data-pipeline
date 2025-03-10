@@ -3,7 +3,7 @@ coincap:
   outputs:
     dev:
       type: postgres
-      host: postgres
+      host: localhost
       user: admin
       password: admin
       port: 5432
