@@ -1,4 +1,4 @@
-# Coincap End to End Data Pipeline
+# Coincap End to End ETL Data Pipeline
 
 ## Introduction
 The goal of this project is to develop an automated data pipeline that collects cryptocurrency data from the CoinCap public API, performs extraction, transformation, and loading (ETL) processes, and prepares the data for analysis. This pipeline will allow the creation of a dashboard that provides end-users with actionable insights and valuable information.
