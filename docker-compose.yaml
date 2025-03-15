@@ -40,7 +40,7 @@ x-airflow-common:
     - ./plugins:/opt/airflow/plugins
     - ./data:/opt/airflow/data
     - ./dbt:/opt/airflow/dbt
-  user: "${AIRFLOW_UID:-50000}:0"
+  user: "50000:0"
   depends_on:
     &airflow-common-depends-on
     redis:
@@ -72,13 +72,8 @@ services:
       - metabase-data:/metabase-data
     ports:
       - 3000:3000
-    environment:
-      MB_DB_TYPE: postgres
-      MB_DB_DBNAME: coincap
-      MB_DB_PORT: 5432
-      MB_DB_USER: admin
-      MB_DB_PASS: admin
-      MB_DB_HOST: postgres
+    depends_on:
+      - postgres
     healthcheck:
       test: curl --fail -I http://localhost:3000/api/health || exit 1
       interval: 15s
@@ -210,7 +205,7 @@ services:
     command:
       - -c
       - |
-        if [[ -z "${AIRFLOW_UID}" ]]; then
+        if [[ -z 50000 ]]; then
           echo
           echo -e "\033[1;33mWARNING!!!: AIRFLOW_UID not set!\e[0m"
           echo "If you are on Linux, you SHOULD follow the instructions below to set "
@@ -253,7 +248,7 @@ services:
           echo
         fi
         mkdir -p /sources/logs /sources/dags /sources/plugins
-        chown -R "${AIRFLOW_UID}:0" /sources/{logs,dags,plugins}
+        chown -R "50000:0" /sources/{logs,dags,plugins}
         exec /entrypoint airflow version
     # yamllint enable rule:line-length
     environment:
@@ -265,7 +260,7 @@ services:
       _PIP_ADDITIONAL_REQUIREMENTS: ''
     user: "0:0"
     volumes:
-      - ${AIRFLOW_PROJ_DIR:-.}:/sources
+      - .:/sources
 
   airflow-cli:
     <<: *airflow-common
