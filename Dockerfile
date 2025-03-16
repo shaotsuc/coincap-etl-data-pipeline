@@ -8,9 +8,6 @@ USER airflow
 
 WORKDIR $AIRFLOW_HOME
 
-USER $AIRFLOW_UID
-
 # Copy the files into the container and package dependencies
 COPY . .
-RUN pip install --no-cache-dir -r requirements.txt
-RUN chmod +x ./entrypoint.sh
+RUN pip install -r requirements.txt
