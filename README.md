@@ -5,9 +5,12 @@
 + [Tech Stack Used](#technologies--tool-used)
 + [Data Pipeline](#data-pipeline)
 + [Data Visualization](#data-visualization)
++ [Installation](#installation)
 
 ## Introduction
 The goal of this project is to develop an automated data pipeline that collects cryptocurrency data from the CoinCap public API, performs extraction, transformation, and loading (ETL) processes, and prepares the data for analysis. This pipeline will allow the creation of a dashboard that provides end-users with actionable insights and valuable information.
+
+> Disclaimer: For demonstration and learning purposes, environment variables are either hardcoded or visible in the setup.
 
 ## Dataset
 The dataset is sourced from the CoinCap API, which offers comprehensive data on cryptocurrency market activity.
@@ -59,3 +62,15 @@ Apache Airflow orchestrates the entire workflow, from data extraction to transfo
 
 ## Data Visualization
 ![crypto-analysis-dashboard](/media/metabase-crypto-analysis-dashboard.png)
+
+## Quick Installation 
+
+```
+git clone https://github.com/shaotsuc/coincap-etl-data-pipeline.git
+```
+
+### Make sure docker is installed in your local machine.
+```
+cd coincap-etl-data-pipeline
+docker compose up
+```
