@@ -1,4 +1,4 @@
-# Coincap End to End ETL Data Pipeline
+# Coincap End to End ETL/ELT Data Pipeline
 
 + [Introduction](#introduction)
 + [Dataset](#dataset)
